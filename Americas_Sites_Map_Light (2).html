@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSV Americas Sites</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: #f0f2f5;
+    color: #1a2033;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    background: #ffffff;
+    border-bottom: 3px solid #c8102e;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    width: 38px;
+    height: 38px;
+    background: #c8102e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -1px;
+    color: white;
+    clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%);
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #1a2033;
+  }
+
+  h1 span { color: #c8102e; }
+
+  .site-count {
+    font-size: 12px;
+    color: #6b7a99;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #3a4a66;
+  }
+
+  .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.15);
+  }
+
+  #map {
+    flex: 1;
+    width: 100%;
+  }
+
+  .search-bar {
+    position: absolute;
+    top: 78px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 800;
+    width: 380px;
+  }
+
+  .search-bar input {
+    width: 100%;
+    background: #ffffff;
+    border: 1.5px solid #d0d7e8;
+    border-radius: 6px;
+    color: #1a2033;
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    padding: 10px 16px;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-bar input:focus {
+    border-color: #c8102e;
+    box-shadow: 0 2px 12px rgba(200,16,46,0.15);
+  }
+
+  .search-bar input::placeholder { color: #a0aabb; }
+
+  /* Popup */
+  .leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    border: 1.5px solid #dde3ef !important;
+    border-radius: 6px !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13) !important;
+    color: #1a2033 !important;
+  }
+
+  .leaflet-popup-tip { background: #ffffff !important; }
+
+  .leaflet-popup-content {
+    margin: 12px 16px !important;
+    font-family: 'Barlow', sans-serif !important;
+  }
+
+  .popup-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2033;
+    margin-bottom: 4px;
+  }
+
+  .popup-address {
+    font-size: 11px;
+    color: #6b7a99;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  .popup-country {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* Stats panel */
+  .stat-bar {
+    position: absolute;
+    bottom: 32px;
+    left: 12px;
+    z-index: 800;
+    background: #ffffff;
+    border: 1.5px solid #dde3ef;
+    border-radius: 6px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    min-width: 190px;
+  }
+
+  .stat-bar-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8892aa;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eef0f5;
+    padding-bottom: 8px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 24px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #3a4a66;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.1);
+  }
+
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a2033;
+  }
+
+  /* Leaflet controls */
+  .leaflet-control-zoom {
+    border: 1.5px solid #dde3ef !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: #ffffff !important;
+    color: #3a4a66 !important;
+    border-color: #dde3ef !important;
+    font-weight: 700 !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: #f0f2f5 !important;
+    color: #c8102e !important;
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(255,255,255,0.85) !important;
+    color: #a0aabb !important;
+    font-size: 9px !important;
+  }
+
+  .leaflet-control-attribution a { color: #8892aa !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">DSV</div>
+    <div>
+      <h1>Americas <span>Site Network</span></h1>
+      <div class="site-count" id="siteCountLabel">Loading sites...</div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1d6fa4"></div>USA</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c8102e"></div>Canada</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0a8a7a"></div>Mexico</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Brazil</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Colombia</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ea580c"></div>Argentina</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Peru</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#db2777"></div>Chile</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#65a30d"></div>Panama</div>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍  Search by site name, client, or city..." />
+</div>
+
+<div id="map"></div>
+
+<div class="stat-bar">
+  <div class="stat-bar-title">Sites by Country</div>
+  <div id="countryStats"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COLORS = {
+  'USA':       '#1d6fa4',
+  'Canada':    '#c8102e',
+  'Mexico':    '#0a8a7a',
+  'Brazil':    '#d97706',
+  'Colombia':  '#7c3aed',
+  'Argentina': '#ea580c',
+  'Peru':      '#059669',
+  'Chile':     '#db2777',
+  'Panama':    '#65a30d',
+};
+
+const sites = [
+  // USA
+  {name:"P&G - Iowa City", address:"2200 Lower Muscatine Rd, Iowa City, IA", lat:41.6405, lng:-91.5007, country:"USA"},
+  {name:"P&G - Greensboro", address:"Greensboro, NC 27214", lat:36.0888, lng:-79.9313, country:"USA"},
+  {name:"P&G - St Louis (Plant)", address:"3049 Westway Dr, Edwardsville, IL", lat:38.7700, lng:-90.0508, country:"USA"},
+  {name:"P&G - St Louis EDMC", address:"3049 Westway Dr, Edwardsville, IL", lat:38.7724, lng:-90.0379, country:"USA"},
+  {name:"P&G – Dallas (Wilmer - DLCM)", address:"101 Mars Road, Wilmer, TX", lat:32.5779, lng:-96.6760, country:"USA"},
+  {name:"P&G - Shippensburg (NEFC)", address:"9300 Olde Scotland Road, Shippensburg, PA", lat:40.0277, lng:-77.5200, country:"USA"},
+  {name:"P&G - Tabler Station", address:"396 Development Drive, Inwood, WV", lat:39.4056, lng:-78.0075, country:"USA"},
+  {name:"P&G - Swing Road", address:"100 S Swing Rd, Greensboro, NC", lat:36.0745, lng:-79.9125, country:"USA"},
+  {name:"Kraft - Winchester", address:"291 Park Center Drive, Winchester, VA", lat:39.2095, lng:-78.1390, country:"USA"},
+  {name:"Royal Canin - Edwardsville", address:"3051 Gateway Commerce Center Dr, Edwardsville, IL", lat:38.7725, lng:-90.0379, country:"USA"},
+  {name:"AWS – CVG (Florence)", address:"2505 Ted Bushelman Blvd, Florence, KY", lat:39.0146, lng:-84.6517, country:"USA"},
+  {name:"AWS - Salt Lake City", address:"5420 W John Cannon Dr, Salt Lake City, UT", lat:40.7895, lng:-112.0215, country:"USA"},
+  {name:"AWS - Burbank", address:"95 Rws Rd, Burbank, WA", lat:46.1244, lng:-118.9249, country:"USA"},
+  {name:"AWS - Gilbert", address:"435 E Germann Road, Gilbert, AZ", lat:33.2760, lng:-111.7801, country:"USA"},
+  {name:"AWS - Sterling", address:"45181 Global Plaza, Sterling, VA", lat:38.9862, lng:-77.4387, country:"USA"},
+  {name:"AWS ATL", address:"5380 Dixie Industrial, Lake City, GA", lat:33.6111, lng:-84.3416, country:"USA"},
+  {name:"AWS AVP", address:"425 Research Drive, Pittston, PA", lat:41.2980, lng:-75.7402, country:"USA"},
+  {name:"AWS CVG05", address:"710 Clymer Ct, Independence, KY", lat:38.9473, lng:-84.6022, country:"USA"},
+  {name:"AWS IAD1 - Chantilly", address:"43035 John Mosby Hwy, Chantilly, VA", lat:38.9273, lng:-77.5148, country:"USA"},
+  {name:"AWS IAD2 - Fredericksburg", address:"1045 Richmond Highway, Fredericksburg, VA", lat:38.3745, lng:-77.4535, country:"USA"},
+  {name:"AWS JAN", address:"135 Industrial Dr N, Madison, MS", lat:32.5191, lng:-90.0962, country:"USA"},
+  {name:"AWS SBN 1", address:"5565 Dylan Dr, South Bend, IN", lat:41.7566, lng:-86.3312, country:"USA"},
+  {name:"AWS SBN 2", address:"5910 Dylan Drive, South Bend, IN", lat:41.7576, lng:-86.3222, country:"USA"},
+  {name:"Microsoft Rockford", address:"7853 S Mulford Road, Cherry Valley, IL", lat:42.1682, lng:-88.9997, country:"USA"},
+  {name:"Intel Oregon", address:"3100 NE Shute Rd RS4, Hillsboro, OR", lat:45.5448, lng:-122.9240, country:"USA"},
+  {name:"Intel Ocotillo", address:"4500 S Dobson Rd, Chandler, AZ", lat:33.2370, lng:-111.8922, country:"USA"},
+  {name:"Intel Santa Clara", address:"3601 Juliette Lane, Santa Clara, CA", lat:37.3865, lng:-121.9652, country:"USA"},
+  {name:"Intel Rio Rancho", address:"4100 Sara Road, Rio Rancho, NM", lat:35.2281, lng:-106.6575, country:"USA"},
+  {name:"Intel Bluewater", address:"7200 Bluewater Rd NE, Albuquerque, NM", lat:35.0845, lng:-106.7181, country:"USA"},
+  {name:"Intel Folsom", address:"1900 Prairie City Rd, Folsom, CA", lat:38.6442, lng:-121.1590, country:"USA"},
+  {name:"Intel Lotus", address:"6615 West Frye Road, Chandler, AZ", lat:33.2967, lng:-111.9555, country:"USA"},
+  {name:"ABB - New Berlin", address:"18200 W Lincoln Ave, New Berlin, WI", lat:43.0029, lng:-88.1401, country:"USA"},
+  {name:"ASML Hillsboro", address:"5615 NE Huffman Street, Hillsboro, OR", lat:45.5582, lng:-122.9218, country:"USA"},
+  {name:"ASML Malta", address:"6 Stone Break Road, Malta, NY", lat:42.9639, lng:-73.7874, country:"USA"},
+  {name:"ASML Manassas", address:"9501 Discovery Blvd, Manassas, VA", lat:38.7499, lng:-77.5280, country:"USA"},
+  {name:"ASML Boise", address:"7039 S Eisenman Road, Boise, ID", lat:43.5374, lng:-116.1671, country:"USA"},
+  {name:"ASML Lehi", address:"4000 N Flash Drive, Lehi, UT", lat:40.4385, lng:-111.8336, country:"USA"},
+  {name:"ASML San Jose", address:"1755 Junction Avenue, San Jose, CA", lat:37.3766, lng:-121.9072, country:"USA"},
+  {name:"ASML Dallas (Plano)", address:"1401 Summit Ave, Plano, TX", lat:33.0099, lng:-96.6931, country:"USA"},
+  {name:"ASML Austin (Hutto)", address:"600 Schneider Blvd, Hutto, TX", lat:30.5480, lng:-97.5661, country:"USA"},
+  {name:"ASML Newtown, CT", address:"7 Edmund Rd, Newtown, CT", lat:41.3928, lng:-73.2890, country:"USA"},
+  {name:"ASML Gilbert", address:"430 E Germann Road, Gilbert, AZ", lat:33.2793, lng:-111.7799, country:"USA"},
+  {name:"ASML Memphis", address:"5950 Freeport Ave, Memphis, TN", lat:35.0118, lng:-89.8633, country:"USA"},
+  {name:"ASML North Plains", address:"28925 NW West Union Road, North Plains, OR", lat:45.5966, lng:-122.9755, country:"USA"},
+  {name:"Cisco Houston", address:"10650 Okanella Street, Houston, TX", lat:29.8602, lng:-95.5611, country:"USA"},
+  {name:"Cisco Dallas", address:"2400 Esters Blvd, Dallas, TX", lat:32.9368, lng:-97.0374, country:"USA"},
+  {name:"Spirit Kingston", address:"2101 John Mewborne Rd, Kinston, NC", lat:35.3270, lng:-77.6035, country:"USA"},
+  {name:"Spirit Tulsa", address:"11427 East 27th Street N, Tulsa, OK", lat:36.1939, lng:-95.8482, country:"USA"},
+  {name:"Spirit Wichita", address:"3298 S Turnpike Drive, Wichita, KS", lat:37.6336, lng:-97.2839, country:"USA"},
+  {name:"Texas Instruments (TI)", address:"4000 N Flash Drive, Lehi, UT", lat:40.4395, lng:-111.8246, country:"USA"},
+  {name:"Pandora Clarksville", address:"1000 Boolean Drive, Clarksville, TN", lat:36.6211, lng:-87.2648, country:"USA"},
+  {name:"Pandora Chattanooga", address:"4513 N Access Rd, Chattanooga, TN", lat:35.1114, lng:-85.2471, country:"USA"},
+  {name:"Pandora Henderson", address:"12020 Bermuda Rd, Henderson, NV", lat:35.9723, lng:-115.1514, country:"USA"},
+  {name:"Pandora Columbus", address:"7585 Robinette Way, Canal Winchester, OH", lat:39.8509, lng:-82.7981, country:"USA"},
+  {name:"Pandora Reno", address:"3300 Waltham Way, McCarran, NV", lat:39.5517, lng:-119.4952, country:"USA"},
+  {name:"Pandora Dallas", address:"3486 Cedardale Rd, Dallas, TX", lat:32.7546, lng:-96.8784, country:"USA"},
+  {name:"Pandora Charleston", address:"1020 Research Center Dr, Ridgeville, SC", lat:32.9623, lng:-80.3077, country:"USA"},
+  {name:"Pandora Chandler", address:"2900 W Innovation St, Chandler, AZ", lat:33.2672, lng:-111.8880, country:"USA"},
+  {name:"Pandora Fort Wayne", address:"5801 Adams Center Rd, Fort Wayne, IN", lat:41.0310, lng:-85.0542, country:"USA"},
+  {name:"Pandora Las Vegas", address:"12020 Bermuda Rd, Henderson, NV", lat:35.9733, lng:-115.1424, country:"USA"},
+  {name:"Pandora Mesa", address:"7232 E Elliot Rd, Mesa, AZ", lat:33.3506, lng:-111.6745, country:"USA"},
+  {name:"Pandora Austin", address:"600 New Meister Ln, Pflugerville, TX", lat:30.4826, lng:-97.6236, country:"USA"},
+  {name:"Pandora Phoenix", address:"4802 E Van Buren St, Phoenix, AZ", lat:33.4520, lng:-111.9777, country:"USA"},
+  {name:"Pandora Sterling", address:"24400 Howling Rooster Ln, Sterling, VA", lat:38.9430, lng:-77.5242, country:"USA"},
+  {name:"Pandora Salt Lake City", address:"14850 Pony Express Rd, Riverton, UT", lat:40.4814, lng:-111.9039, country:"USA"},
+  {name:"Kone - Garland", address:"3737 Rock Quarry Rd, Dallas, TX", lat:32.7546, lng:-96.8694, country:"USA"},
+  {name:"American Airlines Houston", address:"971 N Sam Houston Pkwy E, Houston, TX", lat:29.9403, lng:-95.3768, country:"USA"},
+  {name:"Indianapolis Heidelberg", address:"5250 West 76th Street, Indianapolis, IN", lat:39.8918, lng:-86.2532, country:"USA"},
+  {name:"Indianapolis Shared Warehouse", address:"4919 W 78th Street, Indianapolis, IN", lat:39.8935, lng:-86.2450, country:"USA"},
+  {name:"Shared Carson (Los Angeles)", address:"22941 S Wilmington Avenue, Carson, CA", lat:33.8180, lng:-118.2492, country:"USA"},
+  {name:"Dupont Martinsville (Mva)", address:"220 Fontaine Dr, Ridgeway, VA", lat:36.6432, lng:-79.8600, country:"USA"},
+  {name:"Dupont Circleville", address:"2300 Owens Rd, Circleville, OH", lat:39.5657, lng:-82.9426, country:"USA"},
+  {name:"Canon Lockbourne (Columbus)", address:"2525 Rohr Road, Columbus, OH", lat:39.8420, lng:-82.9374, country:"USA"},
+  {name:"THD Indianapolis", address:"4081 Perry Blvd, Whitestown, IN", lat:39.9713, lng:-86.3881, country:"USA"},
+  {name:"Invista (Camden)", address:"643 Hwy 1 South, Lugoff, SC", lat:34.2344, lng:-80.6605, country:"USA"},
+  {name:"Michelin Independence", address:"1 Michelin Dr, Independence, VA", lat:36.6203, lng:-81.1666, country:"USA"},
+  {name:"Kering Wayne", address:"150 Totowa Rd, Wayne, NJ", lat:40.9131, lng:-74.2354, country:"USA"},
+  {name:"Aurora I 10047", address:"800 Bilter Rd, Aurora, IL", lat:41.8087, lng:-88.2988, country:"USA"},
+  {name:"Aurora 3-10103", address:"701 Bilter Rd, Aurora, IL", lat:41.8097, lng:-88.2898, country:"USA"},
+  {name:"Braselton - Chemical Guys", address:"753 Broadway Boulevard, Braselton, GA", lat:34.1040, lng:-83.7712, country:"USA"},
+  {name:"Braselton - MC", address:"753 Broadway Boulevard, Braselton, GA", lat:34.1050, lng:-83.7612, country:"USA"},
+  {name:"Henkel - Streetsboro", address:"9780 Mopar Dr, Streetsboro, OH", lat:41.2539, lng:-81.3723, country:"USA"},
+  {name:"PUIG - Nazareth", address:"3943 Easton-Nazareth Highway, Lower Nazareth, PA", lat:40.7253, lng:-75.2999, country:"USA"},
+  {name:"Chemours New Johnsonville", address:"DuPont Road, New Johnsonville, TN", lat:36.0129, lng:-87.9705, country:"USA"},
+  {name:"Moberly - Continental", address:"1957 Route DD, Moberly, MO", lat:39.4420, lng:-92.4543, country:"USA"},
+  {name:"TWA - Alexander - WolfSpeed", address:"1730 TW Alexander Dr, Durham, NC", lat:35.9213, lng:-78.8391, country:"USA"},
+  {name:"Durham", address:"1730 TW Alexander Dr, Durham, NC", lat:35.9223, lng:-78.8301, country:"USA"},
+  {name:"Little Hocking - Celanase", address:"251 Arrowhead Rd, Little Hocking, OH", lat:39.2812, lng:-81.6865, country:"USA"},
+  {name:"DuPont Little Hocking", address:"251 Arrowhead Rd, Little Hocking, OH", lat:39.2822, lng:-81.6765, country:"USA"},
+  {name:"Pasadena", address:"13031 Bay Area Blvd, Pasadena, TX", lat:29.6443, lng:-95.0537, country:"USA"},
+  {name:"Lancaster 1", address:"3001 Midpoint Dr, Lancaster, TX", lat:32.6270, lng:-96.7759, country:"USA"},
+  {name:"Lancaster 2.0", address:"3701 Midpoint Drive, Lancaster, TX", lat:32.6314, lng:-96.7825, country:"USA"},
+  {name:"Dallas Lancaster", address:"2400 Esters Blvd, Dallas, TX", lat:32.9378, lng:-97.0284, country:"USA"},
+  {name:"Pharr 1", address:"10700 Matador Dr, Pharr, TX", lat:26.0924, lng:-98.1950, country:"USA"},
+  {name:"Los Indios, Tx", address:"1101 Joaquin Cavazos Rd, Los Indios, TX", lat:26.0432, lng:-97.7317, country:"USA"},
+  {name:"Altria / Chester VA", address:"2601 Bermuda Hundred Rd, Chester, VA", lat:37.3419, lng:-77.3066, country:"USA"},
+  {name:"Folcroft", address:"117-122 Darby Commons, Folcroft, PA", lat:39.8932, lng:-75.2715, country:"USA"},
+  {name:"Chemours Pass Christian", address:"7990 Kiln-Delisle Rd, Pass Christian, MS", lat:30.3978, lng:-89.3135, country:"USA"},
+  {name:"DuPont Chemours", address:"7990 Kiln-Delisle Rd, Pass Christian, MS", lat:30.3988, lng:-89.3035, country:"USA"},
+  {name:"Port Reading", address:"1005 W Middlesex Ave, Port Reading, NJ", lat:40.5675, lng:-74.2389, country:"USA"},
+  {name:"Port Reading 3", address:"1009 W Middlesex Ave, Port Reading, NJ", lat:40.5685, lng:-74.2289, country:"USA"},
+  {name:"Riverside CA", address:"6681 River Run Road, Riverside, CA", lat:33.9282, lng:-117.3025, country:"USA"},
+  {name:"Sycamore Canyon CA", address:"6255 Sycamore Canyon Blvd, Riverside, CA", lat:33.9377, lng:-117.3009, country:"USA"},
+  {name:"West Hazelton, PA", address:"100 Green Mountain Rd, Hazelton, PA", lat:40.9173, lng:-76.0774, country:"USA"},
+  {name:"Slover, MC - Fontana", address:"13032 Slover Ave, Fontana, CA", lat:34.0638, lng:-117.5210, country:"USA"},
+  {name:"Bar Harbor MC", address:"14780 Bar Harbor Road, Fontana, CA", lat:34.1181, lng:-117.4817, country:"USA"},
+  {name:"Lansdale - Draeger", address:"6500 N Cannon Ave, Lansdale, PA", lat:40.2564, lng:-75.2774, country:"USA"},
+  {name:"USS Spartanburg", address:"6629 Pottery Rd, Spartanburg, SC", lat:34.9809, lng:-82.0200, country:"USA"},
+  {name:"Multi-Client West Columbia", address:"185 McQueen St, West Columbia, SC", lat:33.9354, lng:-81.0901, country:"USA"},
+  {name:"Richfair MC", address:"185 McQueen St, West Columbia, SC", lat:33.9364, lng:-81.0801, country:"USA"},
+  {name:"Intel / Semicon Phoenix", address:"2021 E Jones Ave, Phoenix, AZ", lat:33.4092, lng:-112.0370, country:"USA"},
+  {name:"Intel / Semicon Portland", address:"3100 NE Shute Rd, Hillsboro, OR", lat:45.5458, lng:-122.9140, country:"USA"},
+  {name:"Intel / Semicon Columbus, OH", address:"585 Scherers Ct, Columbus, OH", lat:40.0900, lng:-82.9900, country:"USA"},
+  {name:"Columbus - AWS", address:"11555 Briscoe Parkway, New Albany, OH", lat:40.0992, lng:-82.7263, country:"USA"},
+  {name:"Carteret, NJ - Dole", address:"300 Salt Meadow Rd, Carteret, NJ", lat:40.6012, lng:-74.2147, country:"USA"},
+  {name:"Pooler, GA", address:"101 Clyde Alexander Way, Pooler, GA", lat:32.0804, lng:-81.2013, country:"USA"},
+  {name:"DuPont Monroe", address:"1901 Piedmont Dr, Monroe, NC", lat:35.0051, lng:-80.5284, country:"USA"},
+  {name:"Schaumburg F&E", address:"1901 N Roselle Road, Schaumburg, IL", lat:42.0619, lng:-88.0787, country:"USA"},
+  {name:"Venice, FL", address:"1100 Tamiami Trail South, Venice, FL", lat:27.0822, lng:-82.4358, country:"USA"},
+  {name:"Elk Grove", address:"2911 Laguna Blvd, Elk Grove, CA", lat:38.4285, lng:-121.4726, country:"USA"},
+  {name:"Goodyear - Microsoft", address:"4790 North Cotton Lane, Goodyear, AZ", lat:33.5051, lng:-112.4279, country:"USA"},
+  {name:"Independence - AWS", address:"710 Clymer Ct, Independence, KY", lat:38.9483, lng:-84.5922, country:"USA"},
+  {name:"Jackson - AWS", address:"135 Industrial Dr N, Madison, MS", lat:32.5201, lng:-90.0862, country:"USA"},
+  {name:"Pittston - AWS", address:"415-425 Research Dr, Pittston, PA", lat:41.2990, lng:-75.7302, country:"USA"},
+  {name:"Sterling 2 - AWS", address:"1045 Richmond Highway, Fredericksburg, VA", lat:38.3755, lng:-77.4435, country:"USA"},
+  {name:"Reno - AWS", address:"1200 USA Pkwy, Sparks, NV", lat:39.5526, lng:-119.4852, country:"USA"},
+  {name:"Philadelphia/NJ - AWS", address:"710 Marne HWY, Hainesport, NJ", lat:39.9879, lng:-74.8089, country:"USA"},
+  {name:"Aloha - Intel", address:"2501 NW 229th Ave, Hillsboro, OR", lat:45.5450, lng:-122.9158, country:"USA"},
+  {name:"Summit - P&G", address:"6104 Corporate Park Dr, Browns Summit, NC", lat:36.1648, lng:-79.7377, country:"USA"},
+  // Canada
+  {name:"Clorox", address:"150 Biscayne Cres, Brampton, ON", lat:43.6814, lng:-79.7105, country:"Canada"},
+  {name:"Clorox Co Pack", address:"150 Biscayne Cres, Brampton, ON", lat:43.6824, lng:-79.7005, country:"Canada"},
+  {name:"Colgate", address:"4 Manchester Court, Bolton, ON", lat:43.8676, lng:-79.7505, country:"Canada"},
+  {name:"Henkel Canada", address:"8690 Escarpment Way, Milton, ON", lat:43.5365, lng:-79.9224, country:"Canada"},
+  {name:"Maple Leaf", address:"7474 McLean Road, Puslinch, ON", lat:43.4618, lng:-80.1353, country:"Canada"},
+  {name:"Mars Canada", address:"12315 Coleraine Drive, Bolton, ON", lat:43.8464, lng:-79.7138, country:"Canada"},
+  {name:"BBW/Vista/SVES", address:"2340 Winston Park Drive, Oakville, ON", lat:43.5128, lng:-79.6803, country:"Canada"},
+  {name:"TJX West", address:"8181 Churchill St, Delta, BC", lat:49.0812, lng:-122.9930, country:"Canada"},
+  {name:"TJX Alberta", address:"292190 Nose Creek Blvd, Balzac, AB", lat:51.1887, lng:-113.9711, country:"Canada"},
+  {name:"Bridgestone - Canada", address:"10 Wabash Road, Tillsonburg, ON", lat:42.8488, lng:-80.7091, country:"Canada"},
+  {name:"Tyco (Omni 2)", address:"8480 Hiway 50, Brampton, ON", lat:43.7659, lng:-79.6500, country:"Canada"},
+  {name:"Vancouver - Surrey MC", address:"18899 28th Avenue, Surrey, BC", lat:49.0534, lng:-122.6996, country:"Canada"},
+  {name:"Calgary", address:"1 High Plains Trail, Rocky View County, AB", lat:51.2087, lng:-113.9237, country:"Canada"},
+  {name:"Milton 2 - Parkhill", address:"8205 Parkhill Drive, Milton, ON", lat:43.5333, lng:-79.9041, country:"Canada"},
+  {name:"Milton 1 - Yukon", address:"Milton, Ontario", lat:43.5200, lng:-79.8800, country:"Canada"},
+  // Colombia
+  {name:"LATAM Colombia", address:"Diagonal 24 C No. 96B65, Bogota", lat:4.6812, lng:-74.1304, country:"Colombia"},
+  {name:"Intexzona", address:"Diagonal 24 C No. 96B65, Bogota", lat:4.6822, lng:-74.1204, country:"Colombia"},
+  {name:"Cartagena", address:"Km 9 Via Mamonal, Cartagena", lat:10.3252, lng:-75.4894, country:"Colombia"},
+  // Peru
+  {name:"Villa El Salvador (VES)", address:"Av Los Forestales, Villa El Salvador, Lima", lat:-12.2174, lng:-76.9581, country:"Peru"},
+  {name:"Aldea", address:"Villa el Salvador - Aldea Logistica, Lima", lat:-12.2184, lng:-76.9481, country:"Peru"},
+  {name:"Multiclientes", address:"Av Los Forestales 1296, Villa El Salvador, Lima", lat:-12.2194, lng:-76.9381, country:"Peru"},
+  // Argentina
+  {name:"TLC-Tigre", address:"Av. Presidente Perón 5099, Benavidez, Buenos Aires", lat:-34.4561, lng:-58.5351, country:"Argentina"},
+  {name:"Volkswagen", address:"Km 37.5 Panamericana, Benavidez, Buenos Aires", lat:-34.4571, lng:-58.5251, country:"Argentina"},
+  // Brazil
+  {name:"DSV Cajamar", address:"Rod. Anhanguera, Cajamar, SP", lat:-23.3467, lng:-46.8447, country:"Brazil"},
+  {name:"AWS Cajamar", address:"Av. Ribeirao dos Cristais, 800, Cajamar, SP", lat:-23.3516, lng:-46.8505, country:"Brazil"},
+  {name:"Buckman Sumaré", address:"Rod. Anhanguera, 13959, Sumaré, SP", lat:-22.8369, lng:-47.1732, country:"Brazil"},
+  {name:"Embu das Artes - Givaudan", address:"Av. Helio Ossamu Daikuara, 1445, Embu das Artes, SP", lat:-23.6339, lng:-46.8266, country:"Brazil"},
+  {name:"Itupeva", address:"Estrada Municipal Benedito de Souza, Itupeva, SP", lat:-23.0949, lng:-47.0489, country:"Brazil"},
+  {name:"Jundiaí", address:"Rod. Anhanguera km 49, Jundiaí, SP", lat:-23.2644, lng:-46.8689, country:"Brazil"},
+  {name:"Royal Canin Brazil", address:"Estrada Municipal Benedito de Souza, Itupeva, SP", lat:-23.0959, lng:-47.0389, country:"Brazil"},
+  {name:"Siemens Energy Brazil", address:"Av. Eng. Joao Fernandes Gimenes Molina, 1745, Jundiaí, SP", lat:-23.1556, lng:-46.9485, country:"Brazil"},
+  {name:"San Jose du Pinhais", address:"Sao Jose dos Pinhais, Rod 116 BR", lat:-25.5411, lng:-49.1509, country:"Brazil"},
+  {name:"Araquary", address:"Rodovia BR-101, Araquari, SC", lat:-26.4728, lng:-48.7433, country:"Brazil"},
+  {name:"Hortolandia", address:"Rod. Jornalista Francisco Aguirre Proenca, km9, Hortolandia, SP", lat:-22.8962, lng:-47.2049, country:"Brazil"},
+  {name:"Sorocaba", address:"Av. Jerome Case, 2600, Sorocaba, SP", lat:-23.4439, lng:-47.3894, country:"Brazil"},
+  // Mexico
+  {name:"Beam Suntory", address:"Carretera la Venta Nextipac 3020, Zapopan, Jalisco", lat:20.7494, lng:-103.5364, country:"Mexico"},
+  {name:"Catl", address:"TULE Industrial Park 3, Tultepec, Estado de Mexico", lat:19.6512, lng:-99.1501, country:"Mexico"},
+  {name:"Cisco Guadalajara", address:"Av. Guadalupe No. 920-B, Zapopan, Jalisco", lat:20.6679, lng:-103.4631, country:"Mexico"},
+  {name:"Cisco Juárez", address:"Avenida de las Torres 2280, Ciudad Juárez", lat:31.6151, lng:-106.3953, country:"Mexico"},
+  {name:"Intel Guadalajara", address:"av del bosque 1001, Zapopan, Jalisco", lat:20.6789, lng:-103.4531, country:"Mexico"},
+  {name:"Microsoft II Juárez", address:"Carretera Juárez Porvenir 771, Ciudad Juárez", lat:31.6429, lng:-106.3443, country:"Mexico"},
+  {name:"Microsoft Juarez", address:"Blvd. Manuel Talamas Camandari 10051, Ciudad Juárez", lat:31.6059, lng:-106.4038, country:"Mexico"},
+  {name:"Molex", address:"Venta Nextipac No 3020, Zapopan, Jalisco", lat:20.7494, lng:-103.5264, country:"Mexico"},
+  {name:"Pandora Mexico", address:"Autopista Cuota 45D, Apaseo el Grande, Gto.", lat:20.5374, lng:-100.6983, country:"Mexico"},
+  {name:"Guadalajara Tec II", address:"Anillo Periferico Sur 7980, Tlaquepaque, Jalisco", lat:20.6096, lng:-103.4013, country:"Mexico"},
+  {name:"Guadalajara Vesta", address:"Carr. Guadalajara el Salto 1900, El Salto, Jalisco", lat:20.5653, lng:-103.2967, country:"Mexico"},
+  {name:"Apodaca 2", address:"Blvd. Guadalupe 900-A, Apodaca, Nuevo Leon", lat:25.7415, lng:-100.1922, country:"Mexico"},
+  {name:"Aguafria", address:"Carretera Apodaca 499, Prologis Park Agua Fria, Apodaca", lat:25.7893, lng:-100.1586, country:"Mexico"},
+  {name:"Cienega de Flores", address:"Av. Multiparque 130, Cienega de Flores, Nuevo Leon", lat:25.8978, lng:-100.2338, country:"Mexico"},
+  {name:"Saltillo", address:"Libramiento Oscar Flores Tapia 1038, Saltillo, Coahuila", lat:25.4497, lng:-100.8928, country:"Mexico"},
+  {name:"O'Donnell", address:"Carretera Tepotzotlan-La Aurora Km.1, Cuautitlan Izcalli", lat:19.7012, lng:-99.2083, country:"Mexico"},
+  {name:"O'Donnell 2", address:"Rancho Cuatro Milpas, Cuautitlan Izcalli", lat:19.7012, lng:-99.1983, country:"Mexico"},
+  {name:"TR5", address:"Calle Jorge Jimenez Cantu, Cuautitlan Izcalli", lat:19.6899, lng:-99.2125, country:"Mexico"},
+  {name:"TR4", address:"Calle Jorge Jimenez Cantu, Cuautitlan Izcalli", lat:19.6899, lng:-99.2025, country:"Mexico"},
+  {name:"PG 6", address:"Libramiento Norte 87, Tepotzotlan, Estado de Mexico", lat:19.7149, lng:-99.2101, country:"Mexico"},
+  {name:"Chihuahua", address:"Avenida Victor Hugo 330-D, Chihuahua", lat:28.7210, lng:-106.1202, country:"Mexico"},
+  {name:"Irapuato", address:"Carretera Federal 45 Irapuato-Silao 8550, Irapuato, Guanajuato", lat:20.7693, lng:-101.3334, country:"Mexico"},
+  {name:"Queretaro", address:"Av. El Marques Parque Industrial, Queretaro", lat:20.8230, lng:-100.4443, country:"Mexico"},
+  {name:"Matamoros", address:"Av. Thomas Alba Edison 9001, Matamoros, Tamaulipas", lat:25.8636, lng:-97.4686, country:"Mexico"},
+  {name:"Reynosa IGS", address:"Brecha E-99 1160 B, Parque Industrial Reynosa", lat:26.0068, lng:-98.2059, country:"Mexico"},
+  {name:"Reynosa BTS", address:"Ave. de los Cedros 3000, Villa Florida, Reynosa", lat:26.0804, lng:-98.3777, country:"Mexico"},
+  {name:"Tijuana (Prologis)", address:"Boulevard Corredor 2000 25451, Tijuana, Baja California", lat:32.4436, lng:-116.8328, country:"Mexico"},
+  {name:"Ramos", address:"Amistad Chuy Maria Industrial Park, Ramos Arizpe, Coahuila", lat:25.5760, lng:-100.8797, country:"Mexico"},
+  {name:"Juarez Mexico", address:"Av. Miguel De La Madrid 1135, Ciudad Juarez", lat:31.6194, lng:-106.4189, country:"Mexico"},
+  // Chile
+  {name:"Apple Chile", address:"Los Maitenes 11300, Pudahuel, Santiago", lat:-33.4324, lng:-70.7916, country:"Chile"},
+  // Panama
+  {name:"AMSA", address:"CocoSolito, Colon, Panama", lat:9.3409, lng:-79.8788, country:"Panama"},
+];
+
+// Map init - light tile layer
+const map = L.map('map', { center: [20, -85], zoom: 4 });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 20
+}).addTo(map);
+
+function makeIcon(country) {
+  const color = COLORS[country] || '#1a2033';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:13px;height:13px;
+      border-radius:50%;
+      background:${color};
+      border:2.5px solid rgba(255,255,255,0.9);
+      box-shadow:0 1px 4px rgba(0,0,0,0.3);
+      cursor:pointer;
+    "></div>`,
+    iconSize: [13,13],
+    iconAnchor: [6,6]
+  });
+}
+
+function getPopupHtml(site) {
+  const color = COLORS[site.country] || '#1a2033';
+  return `
+    <div class="popup-name">${site.name}</div>
+    <div class="popup-address">${site.address}</div>
+    <span class="popup-country" style="background:${color}18;color:${color};border:1px solid ${color}55">${site.country}</span>
+  `;
+}
+
+let markers = [];
+
+sites.forEach(site => {
+  const marker = L.marker([site.lat, site.lng], { icon: makeIcon(site.country) });
+  marker.bindPopup(getPopupHtml(site), { maxWidth: 260 });
+  marker.siteData = site;
+  marker.addTo(map);
+  markers.push(marker);
+});
+
+document.getElementById('siteCountLabel').textContent = `${sites.length} sites across 9 countries`;
+
+// Country stats
+const countryCount = {};
+sites.forEach(s => { countryCount[s.country] = (countryCount[s.country] || 0) + 1; });
+const statsEl = document.getElementById('countryStats');
+Object.entries(countryCount).sort((a,b) => b[1]-a[1]).forEach(([country, count]) => {
+  statsEl.innerHTML += `
+    <div class="stat-row">
+      <div class="stat-label">
+        <div class="stat-swatch" style="background:${COLORS[country]}"></div>
+        ${country}
+      </div>
+      <div class="stat-num">${count}</div>
+    </div>`;
+});
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function() {
+  const query = this.value.toLowerCase().trim();
+  markers.forEach(marker => {
+    const s = marker.siteData;
+    const matches = !query ||
+      s.name.toLowerCase().includes(query) ||
+      s.address.toLowerCase().includes(query) ||
+      s.country.toLowerCase().includes(query);
+    marker._icon && (marker._icon.style.opacity = matches ? '1' : '0.12');
+  });
+});
+</script>
+</body>
+</html>
